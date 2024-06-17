@@ -8,8 +8,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm, trange
-
 import matplotlib.pyplot as plt
+from tensorboardX import SummaryWriter
 
 from run_nerf_helpers import *
 
@@ -116,7 +116,6 @@ def render(H, W, K, chunk=1024*32, rays=None, c2w=None, ndc=True,
     # Create ray batch
     rays_o = torch.reshape(rays_o, [-1,3]).float()
     rays_d = torch.reshape(rays_d, [-1,3]).float()
-
     near, far = near * torch.ones_like(rays_d[...,:1]), far * torch.ones_like(rays_d[...,:1])
     rays = torch.cat([rays_o, rays_d, near, far], -1)
     if use_viewdirs:
@@ -705,7 +704,7 @@ def train():
     print('VAL views are', i_val)
 
     # Summary writers
-    # writer = SummaryWriter(os.path.join(basedir, 'summaries', expname))
+    writer = SummaryWriter(os.path.join(basedir, 'summaries', expname))
     
     start = start + 1
     for i in trange(start, N_iters):
@@ -827,6 +826,8 @@ def train():
     
         if i%args.i_print==0:
             tqdm.write(f"[TRAIN] Iter: {i} Loss: {loss.item()}  PSNR: {psnr.item()}")
+            writer.add_scalar('Loss/train', loss.item(), i)
+            writer.add_scalar('PSNR/train', psnr.item(), i)
         """
             print(expname, i, psnr.numpy(), loss.numpy(), global_step.numpy())
             print('iter time {:.05f}'.format(dt))
